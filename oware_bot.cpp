@@ -244,12 +244,14 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 
 	//seed capture from computer cells [player turn]
 	if(!computer_play && (current_cell >= 0 && current_cell <= 5)){
+		cout << endl <<  "player captures seeds";
 		for (int i = current_cell; i >= 0; --i)
 		{			
-			int seeds = next->cells_computer[i];
+			int pos = COLUMNS - 1 - i;
+			int seeds = next->cells_computer[pos];
 			if(seeds == 2 || seeds == 3){
 				next->seeds_player += seeds;
-				next->cells_computer[i] = 0;
+				next->cells_computer[pos] = 0;
 				continue;
 			}
 			else{
@@ -259,22 +261,21 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 	}
 	//seed capture from player cells [computer turn]
 	else if(computer_play && (current_cell >= 6 && current_cell <= 11)){
+		cout << endl <<  "computer captures seeds";
 		for (int i = current_cell; i >= 6; --i)
 		{			
-			int seeds = next->cells_player[i];
+			int pos = current_cell - COLUMNS;
+			int seeds = next->cells_player[pos];
 			if(seeds == 2 || seeds == 3){
 				next->seeds_computer += seeds;
-				next->cells_player[i] = 0;
+				next->cells_player[pos] = 0;
 				continue;
 			}
 			else{
 				break;
 			}
-		}
-			
+		}			
 	}
-
-	// cout << "cur: " << current_cell << endl;
 }
 
 int final_position(const Position *current, int computer_play, int current_depth){
@@ -295,7 +296,7 @@ int final_position(const Position *current, int computer_play, int current_depth
 
 int evaluation(const Position *p, int computer_play, int current_depth){
 
-	//ARE WE SURE ?!?!?!
+	//AM I SURE ?!?!?!
 	int difference = p->seeds_player - p->seeds_computer;
 	if(computer_play){
 		return difference;
