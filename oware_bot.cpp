@@ -174,13 +174,13 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 void play_move(Position *next, const Position *current, int computer_play, int start)
 {
-	
+	//copying current state to new state
 	for (int i = 0; i < COLUMNS; ++i) // improve this?
 	{
 		next->cells_player[i] = current->cells_player[i];
 		next->cells_computer[i] = current->cells_computer[i];
 	}
-
+	//in move is invalid, do not change anything
 	if(!valid_move(current, computer_play, start)){
 		next->computer_play = current->computer_play;
 		next->seeds_computer = current->seeds_computer;
@@ -188,58 +188,50 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 		return; 
 	}
 
+	//change player turn
 	next->computer_play = !computer_play;
 	next->seeds_computer = current->seeds_computer;
 	next->seeds_player = current->seeds_player;
 
 	int current_cell;
 	int seeds_to_place;
-
 	//abstract the positions as a ring with 12 cells
 	//translate start position from respective boards to the ring
 	//easier to do the anti clockwise movement (I think)
 	if(computer_play){
 
 		current_cell = COLUMNS - 1 - start;
-		next->cells_computer[start] = 0;
-		seeds_to_place = current->cells_computer[start];					
+		seeds_to_place = next->cells_computer[start];
+		next->cells_computer[start] = 0;		
 	}
 	else{
 
-		current_cell = start + COLUMNS;
-		
-		seeds_to_place = current->cells_player[start];
+		current_cell = start + COLUMNS;		
+		seeds_to_place = next->cells_player[start];
 		next->cells_player[start] = 0;
 	}
 
 	// cout << endl << "seeds: " << seeds_to_place << " start_col: " << current_cell << endl;
 
+	int start_cell = current_cell;
 	while((seeds_to_place--) != 0){
 		
 		current_cell = (current_cell + 1) % 12; //2 * COLUMNS
+		//skip the cell from which seeds are initially drawn
+		if(current_cell == start_cell){
+			seeds_to_place++; //seed has not been placed
+			continue;
+		}
 
 		if(current_cell >= 0  && current_cell <= 5){
 			int pos = COLUMNS - 1 - current_cell;
-			next->cells_computer[pos] = current->cells_computer[pos] + 1;
-
-			//seed capture
-			// if(next->cells_computer[pos] == 2 || next->cells_computer[pos] == 3){
-			// 	next->seeds_computer += next->cells_computer[pos];		
-			// 	next->cells_computer[pos] = 0;
-			// }
+			next->cells_computer[pos] = next->cells_computer[pos] + 1;			
 		}
 		else{
 			int pos = current_cell - COLUMNS;
-			next->cells_player[pos] = current->cells_player[pos] + 1;
-
-			//seed capture
-			// if(next->cells_player[pos] == 2 || next->cells_player[pos] == 3){
-			// 	next->seeds_player += next->cells_player[pos];		
-			// 	next->cells_player[pos] = 0;
-			// }
+			next->cells_player[pos] = next->cells_player[pos] + 1;
 		}
 		cout << "current cell:" << current_cell << endl;
-
 	}
 
 	//seed capture from computer cells [player turn]
@@ -250,6 +242,7 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 			int pos = COLUMNS - 1 - i;
 			int seeds = next->cells_computer[pos];
 			if(seeds == 2 || seeds == 3){
+				cout << endl << "capture from: " << pos;
 				next->seeds_player += seeds;
 				next->cells_computer[pos] = 0;
 				continue;
@@ -264,9 +257,10 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 		cout << endl <<  "computer captures seeds";
 		for (int i = current_cell; i >= 6; --i)
 		{			
-			int pos = current_cell - COLUMNS;
+			int pos = i - COLUMNS;
 			int seeds = next->cells_player[pos];
 			if(seeds == 2 || seeds == 3){
+				cout << endl << "capture from: " << pos;
 				next->seeds_computer += seeds;
 				next->cells_player[pos] = 0;
 				continue;
