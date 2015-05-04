@@ -3,7 +3,7 @@ using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 6
+#define MAX_DEPTH 12
 #define INIT_SEEDS_IN_PIT 4
 
 struct Position {
@@ -29,7 +29,7 @@ void print_board(const Position *p, int);
 
 int main(){
 	
-	Position init, next1, next2, next3;
+	Position init;
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		init.cells_player[i] = INIT_SEEDS_IN_PIT;
@@ -50,6 +50,30 @@ int main(){
 	
 	for (int i = 0; ; ++i)
 	{		
+
+		Move play = minimax(&current, computer_play, user_move, 1);
+		play_move(&next, &current, computer_play, play.column);
+		computer_play = !computer_play;
+		cout << endl << i << "Human Play: " << play.column << endl;
+		print_board(&next, 1);
+
+		current = next;
+
+		cout << "Enter move COMPUTER: ";
+		cin >> computer_move;
+		cout << endl;
+		if (valid_move(&current, computer_play, computer_move)){		
+			play_move(&next, &current, computer_play, computer_move);		
+			current = next;
+			computer_play = !computer_play;
+			print_board(&next, 1);
+		}
+		else{
+			cout << "invalid move"  << endl;
+			continue;
+		}
+
+		/*
 		cout << "Enter move HUMAN: ";
 		cin >> user_move;
 		cout << endl;
@@ -88,6 +112,7 @@ int main(){
 		// current = next;
 		//print_board(&current, 1);
 		// cout << endl << i << "  Play: " << play.column << endl;
+		*/
 	}
 
 	return 0;
@@ -98,7 +123,7 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 	// print_board(pos_current, current_depth);
 	int tab_values[6];
-	Position pos_next; // In C : created on the stack: = very fast
+	Position pos_next;
 	int max, min;
 
 	int colummn_to_play_max, colummn_to_play_min;
@@ -107,21 +132,32 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	move.column = column;
 
 	if (final_position(pos_current, computer_play, current_depth)){
-	// returns VALMAX (=48) if the computer wins, -48 if it loses; 0 if draw
+	// returns =48 if the computer wins, -48 if it loses; 0 if draw
 		if(computer_play){
-			move.score = 48;
-			return move;
+
+			//player won
+			if (pos_current->seeds_player > 24){
+				move.score = 48;			
+			}
+			else{
+				move.score = evaluation(pos_current, computer_play, current_depth);
+			}						
 		}
 		else{
-			move.score = -48;
-			return move;
+			//computer won
+			if (pos_current->seeds_computer > 24){
+				move.score = -48;
+			}
+			else{
+				move.score = evaluation(pos_current, computer_play, current_depth);
+			}			
 		}
+		return move;
 	}
 
 	if (current_depth == MAX_DEPTH) {
 		move.score = evaluation(pos_current, computer_play, current_depth);
 		return move;
-		// the simplest evealution fucntion is the difference of the taken seeds
 	}
 
 	//each possible move
@@ -133,31 +169,35 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 			// pos_next is the new current poisition and we change the player
 			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1);
 			tab_values[i] = c.score;
+			if(tab_values[i] > max){
+				max = tab_values[i];
+				colummn_to_play_max = i;
+			}
+			if(tab_values[i] < min){
+				min = tab_values[i];
+				colummn_to_play_min = i;
+			}
 		}
 		else {
-			if (computer_play) 
+			if (computer_play)//computer returns max value, this should ensure that an invalid move is never returned
 				tab_values[i]= -100;
 			else
 				tab_values[i]= +100;			
 		}		
 	}
 	
-	// colummn_to_play_min = 0;
-	// colummn_to_play_max = 0;
-
-	
 	//player should return min value
 	if (!computer_play){
 
-		min = tab_values[0];
-		colummn_to_play_min = 0;
-		for (int i = 1; i < 6; ++i)
-		{
-			if(tab_values[i] < min){
-				min = tab_values[i];
-				colummn_to_play_min = i;
-			}
-		}
+		// min = tab_values[0];
+		// colummn_to_play_min = 0;
+		// for (int i = 1; i < 6; ++i)
+		// {
+		// 	if(tab_values[i] < min){
+		// 		min = tab_values[i];
+		// 		colummn_to_play_min = i;
+		// 	}
+		// }
 
 		move.score = min;
 		move.column = colummn_to_play_min;
@@ -165,16 +205,16 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	//computer should return max value
 	else{
 
-		max = tab_values[0];
-		colummn_to_play_max = 0;
-		for (int i = 1; i < 6; ++i)
-		{
-			if (tab_values[i] > max)
-			{
-				max = tab_values[i];
-				colummn_to_play_max = i;
-			}
-		}
+		// max = tab_values[0];
+		// colummn_to_play_max = 0;
+		// for (int i = 1; i < 6; ++i)
+		// {
+		// 	if (tab_values[i] > max)
+		// 	{
+		// 		max = tab_values[i];
+		// 		colummn_to_play_max = i;
+		// 	}
+		// }
 		move.score = max;
 		move.column = colummn_to_play_max;
 	}
@@ -241,18 +281,18 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 			int pos = current_cell - COLUMNS;
 			next->cells_player[pos] = next->cells_player[pos] + 1;
 		}
-		cout << "current cell:" << current_cell << endl;
+		//cout << "current cell:" << current_cell << endl;
 	}
 
 	//seed capture from computer cells [player turn]
 	if(!computer_play && (current_cell >= 0 && current_cell <= 5)){
-		cout << endl <<  "player captures seeds";
+		//cout << endl <<  "player captures seeds";
 		for (int i = current_cell; i >= 0; --i)
 		{			
 			int pos = COLUMNS - 1 - i;
 			int seeds = next->cells_computer[pos];
 			if(seeds == 2 || seeds == 3){
-				cout << endl << "capture from: " << pos;
+				//cout << endl << "capture from: " << pos;
 				next->seeds_player += seeds;
 				next->cells_computer[pos] = 0;
 				continue;
@@ -264,13 +304,13 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 	}
 	//seed capture from player cells [computer turn]
 	else if(computer_play && (current_cell >= 6 && current_cell <= 11)){
-		cout << endl <<  "computer captures seeds";
+		//cout << endl <<  "computer captures seeds";
 		for (int i = current_cell; i >= 6; --i)
 		{			
 			int pos = i - COLUMNS;
 			int seeds = next->cells_player[pos];
 			if(seeds == 2 || seeds == 3){
-				cout << endl << "capture from: " << pos;
+				//cout << endl << "capture from: " << pos;
 				next->seeds_computer += seeds;
 				next->cells_player[pos] = 0;
 				continue;
@@ -288,11 +328,11 @@ int final_position(const Position *current, int computer_play, int current_depth
 	
 	//winning condition
 	if(computer_play && current->seeds_computer > 24){
-		cout << endl << "Computer wins";
+		//cout << endl << "Computer wins";
 		return 1;
 	}
 	else if(!computer_play && current->seeds_player > 24){
-		cout << endl << "Player wins";
+		//cout << endl << "Player wins";
 		return 1;
 	}
 
@@ -305,7 +345,7 @@ int final_position(const Position *current, int computer_play, int current_depth
 			final += current->cells_player[i];
 
 		if(final != 0){
-			cout << endl << "no move to play";
+			//cout << endl << "there is move to play";
 			return 0;
 		}
 	}
@@ -327,7 +367,7 @@ int evaluation(const Position *p, int computer_play, int current_depth){
 int valid_move(const Position *p, int computer_play, int column){
 	
 	if(column < 0 || column >= COLUMNS){ // invalid column number
-		cout << "invalid column number: " << column << endl;
+		//cout << "invalid column number: " << column << endl;
 		return 0;
 	}
 
@@ -335,7 +375,7 @@ int valid_move(const Position *p, int computer_play, int column){
 		if(p->cells_computer[column] != 0) //cell has seeds, valid move
 			return 1;
 		else{
-			cout << "invalid move computer " << column << endl;
+			//cout << "invalid move computer " << column << endl;
 			return 0;
 		}
 	}
@@ -343,7 +383,7 @@ int valid_move(const Position *p, int computer_play, int column){
 		if(p->cells_player[column] != 0) //cell has seeds, valid move
 			return 1;
 		else{
-			cout << "invalid move player " << column << endl;
+			//cout << "invalid move player " << column << endl;
 			return 0;	
 		}
 	}
