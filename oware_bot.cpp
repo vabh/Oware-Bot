@@ -102,25 +102,25 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	int max, min;
 
 	int colummn_to_play_max, colummn_to_play_min;
-	Move m;
-	m.computer_play = computer_play;
-	m.column = column;
+	Move move;
+	move.computer_play = computer_play;
+	move.column = column;
 
 	if (final_position(pos_current, computer_play, current_depth)){
 	// returns VALMAX (=48) if the computer wins, -48 if it loses; 0 if draw
 		if(computer_play){
-			m.score = 48;
-			return m;
+			move.score = 48;
+			return move;
 		}
 		else{
-			m.score = -48;
-			return m;
+			move.score = -48;
+			return move;
 		}
 	}
 
 	if (current_depth == MAX_DEPTH) {
-		m.score = evaluation(pos_current, computer_play, current_depth);
-		return m;
+		move.score = evaluation(pos_current, computer_play, current_depth);
+		return move;
 		// the simplest evealution fucntion is the difference of the taken seeds
 	}
 
@@ -145,31 +145,41 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	// colummn_to_play_min = 0;
 	// colummn_to_play_max = 0;
 
-	for (int i = 0; i < COLUMNS; ++i)
-	{
-		if (tab_values[i] != 100 && tab_values[i] > max){
-			max = tab_values[i];
-			colummn_to_play_max = i;
-		}
-		
-		if (tab_values[i] != -100 && tab_values[i] < min){
-			min = tab_values[i];
-			colummn_to_play_min = i;
-		}
-		
-	}
 	
-	m.computer_play = computer_play;
-	if (computer_play){
-		m.score = min;
-		m.column = colummn_to_play_min;
+	//player should return min value
+	if (!computer_play){
+
+		min = tab_values[0];
+		colummn_to_play_min = 0;
+		for (int i = 1; i < 6; ++i)
+		{
+			if(tab_values[i] < min){
+				min = tab_values[i];
+				colummn_to_play_min = i;
+			}
+		}
+
+		move.score = min;
+		move.column = colummn_to_play_min;
 	}
+	//computer should return max value
 	else{
-		m.score = max;
-		m.column = colummn_to_play_max;
+
+		max = tab_values[0];
+		colummn_to_play_max = 0;
+		for (int i = 1; i < 6; ++i)
+		{
+			if (tab_values[i] > max)
+			{
+				max = tab_values[i];
+				colummn_to_play_max = i;
+			}
+		}
+		move.score = max;
+		move.column = colummn_to_play_max;
 	}
 
-	return m;
+	return move;
 }
 
 void play_move(Position *next, const Position *current, int computer_play, int start)
@@ -275,15 +285,29 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 int final_position(const Position *current, int computer_play, int current_depth){
 
 	int final = 0;
+	
+	//winning condition
+	if(computer_play && current->seeds_computer > 24){
+		cout << endl << "Computer wins";
+		return 1;
+	}
+	else if(!computer_play && current->seeds_player > 24){
+		cout << endl << "Player wins";
+		return 1;
+	}
+
+	//if no move to play
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		if(computer_play)
-			final += current->cells_player[i];
-		else
 			final += current->cells_computer[i];
+		else
+			final += current->cells_player[i];
 
-		if(final != 0)
+		if(final != 0){
+			cout << endl << "no move to play";
 			return 0;
+		}
 	}
 	return 1;
 }
