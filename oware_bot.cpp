@@ -1,10 +1,51 @@
 #include <iostream>
+#include <sys/time.h>
+#include <ctime>
+
 using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 8
+#define MAX_DEPTH 13
 #define INIT_SEEDS_IN_PIT 4
+
+typedef long long int64; typedef unsigned long long uint64;
+
+//credit to SO user @andreas-bonini
+uint64 GetTimeMs64()
+{
+#ifdef _WIN32
+ /* Windows */
+ FILETIME ft;
+ LARGE_INTEGER li;
+
+ /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+  * to a LARGE_INTEGER structure. */
+ GetSystemTimeAsFileTime(&ft);
+ li.LowPart = ft.dwLowDateTime;
+ li.HighPart = ft.dwHighDateTime;
+
+ uint64 ret = li.QuadPart;
+ ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+ ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+
+ return ret;
+#else
+ /* Linux */
+ struct timeval tv;
+
+ gettimeofday(&tv, NULL);
+
+ uint64 ret = tv.tv_usec;
+ /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+ ret /= 1000;
+
+ /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+ ret += (tv.tv_sec * 1000);
+
+ return ret;
+#endif
+}
 
 struct Position {
    int cells_player[6];
@@ -20,7 +61,7 @@ struct Move {
 	bool computer_play;
 };
 
-Move minimax(const Position *p, int, int, int);
+Move minimax(const Position *p, int, int, int, int, int);
 int evaluation(const Position *p, int, int);
 int final_position(const Position *p, int, int);
 int valid_move(const Position *p, int, int);
@@ -48,16 +89,21 @@ int main(){
 	int user_move = 0;	
 	int computer_move = 0;
 	int current_depth = 0;
+
+	int alpha = -100;
+	int beta = 100;
 	
 	for (int i = 0; ; ++i)
 	{		
 
-		Move play = minimax(&current, computer_play, user_move, current_depth);
+		uint64 t1 = GetTimeMs64();
+		Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
+		uint64 t2 = GetTimeMs64();
 
 		//check for validity of returned move and winning conditions
 		play_move(&next, &current, computer_play, play.column);
 		computer_play = !computer_play;
-		cout << endl << "Human Play: " << play.column << endl;
+		cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl;
 		print_board(&next, 1);
 
 		current = next;
@@ -121,13 +167,13 @@ int main(){
 	return 0;
 }
 
-Move minimax(const Position* pos_current, int computer_play, int column, int current_depth){
+Move minimax(const Position* pos_current, int computer_play, int column, int current_depth, int alpha, int beta){
 	// computer_play is true if the computer has to play and false otherwise
 
 	// print_board(pos_current, current_depth);
 	int tab_values[6];
 	//Position pos_next;
-	int max, min;
+	int max = -100, min = 100;
 
 	int colummn_to_play_max, colummn_to_play_min;
 
@@ -169,64 +215,97 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 		return move;
 	}
 
-	for (int i = 0; i < COLUMNS; ++i)
-	{
-		if (computer_play)
-		{
+
+	//each possible move
+	for(int i = 0;i < COLUMNS; i++){
+
+		if (computer_play){
 			tab_values[i] = 100;
 		}
 		else{
 			tab_values[i] = -100;
 		}
-	}
-
-	//each possible move
-	for(int i = 0;i < COLUMNS; i++){
 	
 		if (valid_move(pos_current, computer_play, i)){
 
 			Position pos_next;
 			play_move(&pos_next, pos_current, computer_play, i);
 			// pos_next is the new current poisition and we change the player
-			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1);
+			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1, alpha, beta);
 			tab_values[i] = c.score;			
 			// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
+
+			if(computer_play){
+				if(tab_values[i] < min){
+					min = tab_values[i];
+					colummn_to_play_min = i;
+
+					move.score = min;
+					move.column = colummn_to_play_min;
+				}
+
+				if(beta > min){
+					beta = min;
+				}
+
+				//pruning
+				if(beta < alpha){
+					break;
+				}
+			}
+			else{
+				if (tab_values[i] > max){
+					max = tab_values[i];
+					colummn_to_play_max = i;
+
+					move.score = max;
+					move.column = colummn_to_play_max;
+				}
+
+				if(alpha < max){
+					alpha = max;
+				}
+				//pruning
+				if(beta < alpha){
+					break;
+				}
+			}
 		}		
 	}
 	
 	//computer should return min value
-	if (computer_play){
+	// if (computer_play){
 
-		min = tab_values[0];
-		colummn_to_play_min = 0;
-		for (int i = 1; i < 6; ++i)
-		{
-			if(tab_values[i] < min){
-				min = tab_values[i];
-				colummn_to_play_min = i;
-			}
-		}
+		// min = tab_values[0];
+		// colummn_to_play_min = 0;
+		// for (int i = 1; i < 6; ++i)
+		// {
+		// 	if(tab_values[i] < min){
+		// 		min = tab_values[i];
+		// 		colummn_to_play_min = i;
+		// 	}
+		// }
 
-		move.score = min;
-		move.column = colummn_to_play_min;
-	}
-	//player should return max value	
-	else{
+	// 	move.score = min;
+	// 	move.column = colummn_to_play_min;
+	// }
+	// //player should return max value	
+	// else{
 
-		max = tab_values[0];
-		colummn_to_play_max = 0;
-		for (int i = 1; i < 6; ++i)
-		{
-			if (tab_values[i] > max)
-			{
-				max = tab_values[i];
-				colummn_to_play_max = i;
-			}
-		}
+		// max = tab_values[0];
+		// colummn_to_play_max = 0;
+		// for (int i = 1; i < 6; ++i)
+		// {
+		// 	if (tab_values[i] > max)
+		// 	{
+		// 		max = tab_values[i];
+		// 		colummn_to_play_max = i;
+		// 	}
+		// }
 
-		move.score = max;
-		move.column = colummn_to_play_max;
-	}
+	// 	move.score = max;
+	// 	move.column = colummn_to_play_max;
+	// }
 
 	return move;
 }
