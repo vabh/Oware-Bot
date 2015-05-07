@@ -3,7 +3,7 @@ using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 12
+#define MAX_DEPTH 2
 #define INIT_SEEDS_IN_PIT 4
 
 struct Position {
@@ -45,16 +45,19 @@ int main(){
 	Position current = init;	
 	Position next;
 
-	int user_move;	
+	int user_move = 0;	
 	int computer_move;
+	int current_depth = 0;
 	
 	for (int i = 0; ; ++i)
 	{		
 
-		Move play = minimax(&current, computer_play, user_move, 1);
+		Move play = minimax(&current, computer_play, user_move = 0, current_depth);
+
+		//check for validity of returned move and winning conditions
 		play_move(&next, &current, computer_play, play.column);
 		computer_play = !computer_play;
-		cout << endl << i << "Human Play: " << play.column << endl;
+		cout << endl << "Human Play: " << play.column << endl;
 		print_board(&next, 1);
 
 		current = next;
@@ -123,7 +126,7 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 	// print_board(pos_current, current_depth);
 	int tab_values[6];
-	Position pos_next;
+	//Position pos_next;
 	int max, min;
 
 	int colummn_to_play_max, colummn_to_play_min;
@@ -165,56 +168,53 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	
 		if (valid_move(pos_current, computer_play, i)){
 
+			Position pos_next;
 			play_move(&pos_next, pos_current, computer_play, i);
 			// pos_next is the new current poisition and we change the player
 			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1);
-			tab_values[i] = c.score;
-			if(tab_values[i] > max){
-				max = tab_values[i];
-				colummn_to_play_max = i;
+			tab_values[i] = c.score;			
+			cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
+		}
+		else {
+			if (computer_play){//worst value for minimizing node
+				tab_values[i]= 100;
 			}
+			else{
+				tab_values[i]= -100;			
+			}
+		}		
+	}
+	
+	//computer should return min value
+	if (computer_play){
+
+		min = tab_values[0];
+		colummn_to_play_min = 0;
+		for (int i = 1; i < 6; ++i)
+		{
 			if(tab_values[i] < min){
 				min = tab_values[i];
 				colummn_to_play_min = i;
 			}
 		}
-		else {
-			if (computer_play)//computer returns max value, this should ensure that an invalid move is never returned
-				tab_values[i]= -100;
-			else
-				tab_values[i]= +100;			
-		}		
-	}
-	
-	//player should return min value
-	if (!computer_play){
-
-		// min = tab_values[0];
-		// colummn_to_play_min = 0;
-		// for (int i = 1; i < 6; ++i)
-		// {
-		// 	if(tab_values[i] < min){
-		// 		min = tab_values[i];
-		// 		colummn_to_play_min = i;
-		// 	}
-		// }
 
 		move.score = min;
 		move.column = colummn_to_play_min;
 	}
-	//computer should return max value
+	//player should return max value	
 	else{
 
-		// max = tab_values[0];
-		// colummn_to_play_max = 0;
-		// for (int i = 1; i < 6; ++i)
-		// {
-		// 	if (tab_values[i] > max)
-		// 	{
-		// 		max = tab_values[i];
-		// 		colummn_to_play_max = i;
-		// 	}
-		// }
+		max = tab_values[0];
+		colummn_to_play_max = 0;
+		for (int i = 1; i < 6; ++i)
+		{
+			if (tab_values[i] > max)
+			{
+				max = tab_values[i];
+				colummn_to_play_max = i;
+			}
+		}
+
 		move.score = max;
 		move.column = colummn_to_play_max;
 	}
@@ -356,11 +356,12 @@ int evaluation(const Position *p, int computer_play, int current_depth){
 
 	//AM I SURE ?!?!?!
 	int difference = p->seeds_player - p->seeds_computer;
+	//computer is min player, should return min value
 	if(computer_play){
-		return difference;
+		return -difference;
 	}
 	else{
-		return -difference;
+		return difference;
 	}
 }
 
@@ -391,7 +392,11 @@ int valid_move(const Position *p, int computer_play, int column){
 
 void print_board(const Position *p, int current_depth){
 
-	cout << endl << "--" << current_depth << "--";
+	//cout << endl << "--" << current_depth << "--";
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << i << "| ";
+	}
 	cout << endl << "------Computer------" << endl;
 	for (int i = 0; i < COLUMNS; ++i)
 	{
@@ -402,6 +407,11 @@ void print_board(const Position *p, int current_depth){
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		cout << p->cells_player[i] << ", ";
+	}
+	cout << endl;
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << i << "| ";
 	}
 	cout << endl << "Seeds Computer: " << p->seeds_computer;
 	cout << endl << "Seeds Player: " << p->seeds_player;
