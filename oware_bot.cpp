@@ -3,7 +3,7 @@ using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 2
+#define MAX_DEPTH 8
 #define INIT_SEEDS_IN_PIT 4
 
 struct Position {
@@ -46,13 +46,13 @@ int main(){
 	Position next;
 
 	int user_move = 0;	
-	int computer_move;
+	int computer_move = 0;
 	int current_depth = 0;
 	
 	for (int i = 0; ; ++i)
 	{		
 
-		Move play = minimax(&current, computer_play, user_move = 0, current_depth);
+		Move play = minimax(&current, computer_play, user_move, current_depth);
 
 		//check for validity of returned move and winning conditions
 		play_move(&next, &current, computer_play, play.column);
@@ -62,7 +62,7 @@ int main(){
 
 		current = next;
 
-		cout << "Enter move COMPUTER: ";
+		cout << endl << "Enter move COMPUTER: ";
 		cin >> computer_move;
 		cout << endl;
 		if (valid_move(&current, computer_play, computer_move)){		
@@ -130,9 +130,10 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	int max, min;
 
 	int colummn_to_play_max, colummn_to_play_min;
+
 	Move move;
 	move.computer_play = computer_play;
-	move.column = column;
+	
 
 	if (final_position(pos_current, computer_play, current_depth)){
 	// returns =48 if the computer wins, -48 if it loses; 0 if draw
@@ -140,19 +141,23 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 			//player won
 			if (pos_current->seeds_player > 24){
-				move.score = 48;			
+				move.score = 48;	
+				move.column = column;						
 			}
 			else{
 				move.score = evaluation(pos_current, computer_play, current_depth);
+				move.column = column;
 			}						
 		}
 		else{
 			//computer won
 			if (pos_current->seeds_computer > 24){
 				move.score = -48;
+				move.column = column;
 			}
 			else{
 				move.score = evaluation(pos_current, computer_play, current_depth);
+				move.column = column;
 			}			
 		}
 		return move;
@@ -160,7 +165,19 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 	if (current_depth == MAX_DEPTH) {
 		move.score = evaluation(pos_current, computer_play, current_depth);
+		move.column = column;
 		return move;
+	}
+
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		if (computer_play)
+		{
+			tab_values[i] = 100;
+		}
+		else{
+			tab_values[i] = -100;
+		}
 	}
 
 	//each possible move
@@ -173,15 +190,7 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 			// pos_next is the new current poisition and we change the player
 			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1);
 			tab_values[i] = c.score;			
-			cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
-		}
-		else {
-			if (computer_play){//worst value for minimizing node
-				tab_values[i]= 100;
-			}
-			else{
-				tab_values[i]= -100;			
-			}
+			// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
 		}		
 	}
 	
@@ -357,12 +366,13 @@ int evaluation(const Position *p, int computer_play, int current_depth){
 	//AM I SURE ?!?!?!
 	int difference = p->seeds_player - p->seeds_computer;
 	//computer is min player, should return min value
-	if(computer_play){
-		return -difference;
-	}
-	else{
-		return difference;
-	}
+	// if(computer_play){
+	// 	return -difference;
+	// }
+	// else{
+	// 	return difference;
+	// }
+	return difference;
 }
 
 int valid_move(const Position *p, int computer_play, int column){
