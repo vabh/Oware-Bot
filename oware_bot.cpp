@@ -6,7 +6,7 @@ using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 13
+#define MAX_DEPTH 17
 #define INIT_SEEDS_IN_PIT 4
 
 typedef long long int64; typedef unsigned long long uint64;
@@ -103,7 +103,7 @@ int main(){
 		//check for validity of returned move and winning conditions
 		play_move(&next, &current, computer_play, play.column);
 		computer_play = !computer_play;
-		cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl;
+		cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl << endl;
 		print_board(&next, 1);
 
 		current = next;
@@ -170,11 +170,9 @@ int main(){
 Move minimax(const Position* pos_current, int computer_play, int column, int current_depth, int alpha, int beta){
 	// computer_play is true if the computer has to play and false otherwise
 
-	// print_board(pos_current, current_depth);
-	int tab_values[6];
+	// print_board(pos_current, current_depth);	
 	//Position pos_next;
 	int max = -100, min = 100;
-
 	int colummn_to_play_max, colummn_to_play_min;
 
 	Move move;
@@ -218,13 +216,6 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 
 	//each possible move
 	for(int i = 0;i < COLUMNS; i++){
-
-		if (computer_play){
-			tab_values[i] = 100;
-		}
-		else{
-			tab_values[i] = -100;
-		}
 	
 		if (valid_move(pos_current, computer_play, i)){
 
@@ -232,12 +223,12 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 			play_move(&pos_next, pos_current, computer_play, i);
 			// pos_next is the new current poisition and we change the player
 			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1, alpha, beta);
-			tab_values[i] = c.score;			
+			int score = c.score;			
 			// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
 
 			if(computer_play){
-				if(tab_values[i] < min){
-					min = tab_values[i];
+				if(score < min){
+					min = score;
 					colummn_to_play_min = i;
 
 					move.score = min;
@@ -249,13 +240,13 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 				}
 
 				//pruning
-				if(beta < alpha){
+				if(beta <= alpha){
 					break;
 				}
 			}
 			else{
-				if (tab_values[i] > max){
-					max = tab_values[i];
+				if (score > max){
+					max = score;
 					colummn_to_play_max = i;
 
 					move.score = max;
@@ -266,47 +257,12 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 					alpha = max;
 				}
 				//pruning
-				if(beta < alpha){
+				if(beta <= alpha){
 					break;
 				}
 			}
 		}		
 	}
-	
-	//computer should return min value
-	// if (computer_play){
-
-		// min = tab_values[0];
-		// colummn_to_play_min = 0;
-		// for (int i = 1; i < 6; ++i)
-		// {
-		// 	if(tab_values[i] < min){
-		// 		min = tab_values[i];
-		// 		colummn_to_play_min = i;
-		// 	}
-		// }
-
-	// 	move.score = min;
-	// 	move.column = colummn_to_play_min;
-	// }
-	// //player should return max value	
-	// else{
-
-		// max = tab_values[0];
-		// colummn_to_play_max = 0;
-		// for (int i = 1; i < 6; ++i)
-		// {
-		// 	if (tab_values[i] > max)
-		// 	{
-		// 		max = tab_values[i];
-		// 		colummn_to_play_max = i;
-		// 	}
-		// }
-
-	// 	move.score = max;
-	// 	move.column = colummn_to_play_max;
-	// }
-
 	return move;
 }
 
@@ -444,13 +400,6 @@ int evaluation(const Position *p, int computer_play, int current_depth){
 
 	//AM I SURE ?!?!?!
 	int difference = p->seeds_player - p->seeds_computer;
-	//computer is min player, should return min value
-	// if(computer_play){
-	// 	return -difference;
-	// }
-	// else{
-	// 	return difference;
-	// }
 	return difference;
 }
 
@@ -502,7 +451,8 @@ void print_board(const Position *p, int current_depth){
 	{
 		cout << i << "| ";
 	}
-	cout << endl << "Seeds Computer: " << p->seeds_computer;
+
+	cout << endl << endl << "Seeds Computer: " << p->seeds_computer;
 	cout << endl << "Seeds Player: " << p->seeds_player;
 	cout << endl;
 }
