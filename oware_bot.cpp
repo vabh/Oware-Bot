@@ -6,7 +6,7 @@ using namespace std;
 
 #define ROWS 2
 #define COLUMNS 6
-#define MAX_DEPTH 17
+// #define MAX_DEPTH 17
 #define INIT_SEEDS_IN_PIT 4
 
 typedef long long int64; typedef unsigned long long uint64;
@@ -66,6 +66,8 @@ int valid_move(const Position *p, int, int);
 void play_move(Position *p, const Position *p1, int c_play, int start);
 void print_board(const Position *p, int);
 
+int MAX_DEPTH = 17;
+
 int main(){
 	
 	Position init;
@@ -90,9 +92,10 @@ int main(){
 	int alpha = -100;
 	int beta = 100;
 	
-	for (int i = 0; ; ++i)
+	for (; ;)
 	{		
 
+		MAX_DEPTH = 16 + (int)((current.seeds_computer + current.seeds_player) / 8.);
 		uint64 t1 = GetTimeMs64();
 		Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
 		uint64 t2 = GetTimeMs64();
@@ -119,47 +122,6 @@ int main(){
 			cout << "invalid move"  << endl;
 			continue;
 		}
-
-		/*
-		cout << "Enter move HUMAN: ";
-		cin >> user_move;
-		cout << endl;
-		//check for valid move
-
-		if (valid_move(&current, computer_play, user_move)){		
-			play_move(&next, &current, computer_play, user_move);		
-			current = next;
-			computer_play = !computer_play;
-			print_board(&next, 1);
-		}
-		else{
-			cout << "invalid move"  << endl;
-			continue;
-		}
-
-		cout << "Enter move COMPUTER: ";
-		cin >> computer_move;
-		cout << endl;
-		if (valid_move(&current, computer_play, computer_move)){		
-			play_move(&next, &current, computer_play, computer_move);		
-			current = next;
-			computer_play = !computer_play;
-			print_board(&next, 1);
-		}
-		else{
-			cout << "invalid move"  << endl;
-			continue;
-		}
-
-		// cout << "Computer Move";
-		// Move play = minimax(&current, computer_play, user_move, 1);
-		//play_move(&next, &current, computer_play, play.column);
-		// computer_play = !computer_play;
-				
-		// current = next;
-		//print_board(&current, 1);
-		// cout << endl << i << "  Play: " << play.column << endl;
-		*/
 	}
 
 	return 0;
@@ -209,20 +171,54 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 		return move;
 	}
 
-
-	//each possible move
-	for(int i = 0;i < COLUMNS; i++){
+	//player turn
+	if(!computer_play){
+		//each possible move
+		for(int i = COLUMNS - 1;i >= 0; i--){
 	
-		if (valid_move(pos_current, computer_play, i)){
+			if (valid_move(pos_current, computer_play, i)){
 
-			Position pos_next;
-			play_move(&pos_next, pos_current, computer_play, i);
-			// pos_next is the new current poisition and we change the player
-			Move c = minimax(&pos_next, !computer_play, i, current_depth + 1, alpha, beta);
-			int score = c.score;			
-			// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
+				Position pos_next;
+				play_move(&pos_next, pos_current, computer_play, i);
+				// pos_next is the new current poisition and we change the player
+				Move c = minimax(&pos_next, !computer_play, i, current_depth + 1, alpha, beta);
+				int score = c.score;			
+				// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
 
-			if(computer_play){
+				if (score > max){
+					max = score;
+					colummn_to_play_max = i;
+
+					move.score = max;
+					move.column = colummn_to_play_max;
+				}
+
+				if(alpha < max){
+					alpha = max;
+				}
+				//pruning
+				if(beta <= alpha){
+					break;
+				}
+
+			}		
+		}
+		return move;
+	}
+	//computer turn
+	else{
+		// each possible move
+		for(int i = 0 ;i < COLUMNS; i++){
+
+			if (valid_move(pos_current, computer_play, i)){ 
+
+				Position pos_next;
+				play_move(&pos_next, pos_current, computer_play, i);
+				// pos_next is the new current poisition and we change the player
+				Move c = minimax(&pos_next, !computer_play, i, current_depth + 1, alpha, beta);
+				int score = c.score;			
+				// cout << "Depth " << current_depth << ":" << tab_values[i] << endl;
+
 				if(score < min){
 					min = score;
 					colummn_to_play_min = i;
@@ -240,26 +236,9 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 					break;
 				}
 			}
-			else{
-				if (score > max){
-					max = score;
-					colummn_to_play_max = i;
-
-					move.score = max;
-					move.column = colummn_to_play_max;
-				}
-
-				if(alpha < max){
-					alpha = max;
-				}
-				//pruning
-				if(beta <= alpha){
-					break;
-				}
-			}
-		}		
-	}
-	return move;
+		}
+		return move;
+	}		
 }
 
 void play_move(Position *next, const Position *current, int computer_play, int start)
@@ -430,19 +409,50 @@ void print_board(const Position *p, int current_depth){
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		cout << i << "| ";
-	}
+	}	
 	cout << endl << "------Computer------" << endl;
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		cout << p->cells_computer[i] << ", ";
 	}
+
 	cout << endl;
+
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << p->cells_player[i] << ", ";
+	}
+	cout << endl << "------Human------" << endl;
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << i << "| ";
+	}
+
+	cout << endl << endl << "Seeds Computer: " << p->seeds_computer;
+	cout << endl << "Seeds Player: " << p->seeds_player;
+	cout << endl;
+}
+
+void print_board_clockwise(const Position *p, int current_depth){
+
+	//cout << endl << "--" << current_depth << "--";
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << i << "| ";
+	}	
 	cout << endl << "------Human------" << endl;
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		cout << p->cells_player[i] << ", ";
 	}
+
 	cout << endl;
+
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		cout << p->cells_computer[i] << ", ";
+	}
+	cout << endl << "------Computer------" << endl;
 	for (int i = 0; i < COLUMNS; ++i)
 	{
 		cout << i << "| ";
