@@ -50,15 +50,13 @@ uint64 GetTimeMs64()
 struct Position {
    int cells_player[6];
    int cells_computer[6];
-   bool computer_play;
    int seeds_player;
    int seeds_computer;
 };
 
 struct Move {
 	int score;
-	int column;
-	bool computer_play;
+	int column;	
 };
 
 Move minimax(const Position *p, int, int, int, int, int);
@@ -76,8 +74,7 @@ int main(){
 		init.cells_player[i] = INIT_SEEDS_IN_PIT;
 		init.cells_computer[i] = INIT_SEEDS_IN_PIT;
 	}
-
-	init.computer_play = 0;
+	
 	init.seeds_computer = 0;
 	init.seeds_player = 0;
 
@@ -100,6 +97,7 @@ int main(){
 		Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
 		uint64 t2 = GetTimeMs64();
 
+		//generate moves while waiting
 		//check for validity of returned move and winning conditions
 		play_move(&next, &current, computer_play, play.column);
 		computer_play = !computer_play;
@@ -175,9 +173,7 @@ Move minimax(const Position* pos_current, int computer_play, int column, int cur
 	int max = -100, min = 100;
 	int colummn_to_play_max, colummn_to_play_min;
 
-	Move move;
-	move.computer_play = computer_play;
-	
+	Move move;		
 
 	if (final_position(pos_current, computer_play, current_depth)){
 	// returns =48 if the computer wins, -48 if it loses; 0 if draw
@@ -276,14 +272,14 @@ void play_move(Position *next, const Position *current, int computer_play, int s
 	}
 	//in move is invalid, do not change anything
 	if(!valid_move(current, computer_play, start)){
-		next->computer_play = current->computer_play;
+		// next->computer_play = current->computer_play;
 		next->seeds_computer = current->seeds_computer;
 		next->seeds_player = current->seeds_player;
 		return; 
 	}
 
 	//change player turn
-	next->computer_play = !computer_play;
+	// next->computer_play = !computer_play;
 	next->seeds_computer = current->seeds_computer;
 	next->seeds_player = current->seeds_player;
 
