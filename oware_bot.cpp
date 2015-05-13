@@ -1,6 +1,8 @@
 #include <iostream>
 #include <sys/time.h>
 #include <ctime>
+#include <vector>
+#include <unordered_map>
 
 using namespace std;
 
@@ -8,6 +10,9 @@ using namespace std;
 #define COLUMNS 6
 // #define MAX_DEPTH 17
 #define INIT_SEEDS_IN_PIT 4
+
+typedef unordered_map<int, int> move_map;
+typedef unordered_map<int, move_map> depth_map;
 
 typedef long long int64; typedef unsigned long long uint64;
 
@@ -80,7 +85,7 @@ int main(){
 	init.seeds_computer = 0;
 	init.seeds_player = 0;
 
-	int computer_play = 0;
+	int computer_play = 1;
 
 	Position current = init;	
 	Position next;
@@ -92,38 +97,48 @@ int main(){
 	int alpha = -100;
 	int beta = 100;
 	
+	cout << "Human plays first? (1/0)";
+	cin >> computer_play;
+	computer_play = !computer_play;
+
 	for (; ;)
 	{		
+		if(!computer_play){
 
-		MAX_DEPTH = 16 + (int)((current.seeds_computer + current.seeds_player) / 8.);
-		uint64 t1 = GetTimeMs64();
-		Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
-		uint64 t2 = GetTimeMs64();
+			MAX_DEPTH = 16 + (int)((current.seeds_computer + current.seeds_player) / 8.);
+			uint64 t1 = GetTimeMs64();
+			Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
+			uint64 t2 = GetTimeMs64();
 
-		//generate moves while waiting
-		//check for validity of returned move and winning conditions
-		play_move(&next, &current, computer_play, play.column);
-		computer_play = !computer_play;
-		cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl << endl;
-		print_board(&next, 1);
-
-		current = next;
-
-		cout << endl << "Enter move COMPUTER: ";
-		cin >> computer_move;
-		cout << endl;
-		if (valid_move(&current, computer_play, computer_move)){		
-			play_move(&next, &current, computer_play, computer_move);		
-			current = next;
+			//generate moves while waiting
+			//check for validity of returned move and winning conditions
+			play_move(&next, &current, computer_play, play.column);
 			computer_play = !computer_play;
+			cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl << endl;
 			print_board(&next, 1);
+
+			current = next;
 		}
 		else{
-			cout << "invalid move"  << endl;
-			continue;
+			do{
+				cout << endl << "Enter move COMPUTER: ";
+				cin >> computer_move;
+				cout << endl;
+				if (valid_move(&current, computer_play, computer_move)){
+
+					play_move(&next, &current, computer_play, computer_move);		
+					current = next;
+					computer_play = !computer_play;
+					print_board(&next, 1);
+					break;
+				}
+				else{
+					cout << "invalid move"  << endl;
+					continue;
+				}
+			}while(!valid_move(&current, computer_play, computer_move));
 		}
 	}
-
 	return 0;
 }
 
