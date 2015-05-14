@@ -19,37 +19,37 @@ typedef long long int64; typedef unsigned long long uint64;
 //credit to SO user @andreas-bonini
 uint64 GetTimeMs64()
 {
-#ifdef _WIN32
- /* Windows */
- FILETIME ft;
- LARGE_INTEGER li;
+	#ifdef _WIN32
+	 /* Windows */
+	 FILETIME ft;
+	 LARGE_INTEGER li;
 
- /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
-  * to a LARGE_INTEGER structure. */
- GetSystemTimeAsFileTime(&ft);
- li.LowPart = ft.dwLowDateTime;
- li.HighPart = ft.dwHighDateTime;
+	 /* Get the amount of 100 nano seconds intervals elapsed since January 1, 1601 (UTC) and copy it
+	  * to a LARGE_INTEGER structure. */
+	 GetSystemTimeAsFileTime(&ft);
+	 li.LowPart = ft.dwLowDateTime;
+	 li.HighPart = ft.dwHighDateTime;
 
- uint64 ret = li.QuadPart;
- ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
- ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
+	 uint64 ret = li.QuadPart;
+	 ret -= 116444736000000000LL; /* Convert from file time to UNIX epoch time. */
+	 ret /= 10000; /* From 100 nano seconds (10^-7) to 1 millisecond (10^-3) intervals */
 
- return ret;
-#else
- /* Linux */
- struct timeval tv;
+	 return ret;
+	#else
+	 /* Linux */
+	 struct timeval tv;
 
- gettimeofday(&tv, NULL);
+	 gettimeofday(&tv, NULL);
 
- uint64 ret = tv.tv_usec;
- /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
- ret /= 1000;
+	 uint64 ret = tv.tv_usec;
+	 /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
+	 ret /= 1000;
 
- /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
- ret += (tv.tv_sec * 1000);
+	 /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
+	 ret += (tv.tv_sec * 1000);
 
- return ret;
-#endif
+	 return ret;
+	#endif
 }
 
 struct Position {
@@ -101,11 +101,11 @@ int main(){
 	cin >> computer_play;
 	computer_play = !computer_play;
 
-	for (; ;)
+	for (;;)
 	{		
 		if(!computer_play){
 
-			MAX_DEPTH = 16 + (int)((current.seeds_computer + current.seeds_player) / 8.);
+			MAX_DEPTH = 17 + (int)((current.seeds_computer + current.seeds_player) / 8.);
 			uint64 t1 = GetTimeMs64();
 			Move play = minimax(&current, computer_play, user_move, current_depth, alpha, beta);
 			uint64 t2 = GetTimeMs64();
@@ -416,6 +416,27 @@ int valid_move(const Position *p, int computer_play, int column){
 			return 0;	
 		}
 	}
+
+	//move should leave atleast one seed for opponent
+	Position pos_next;
+	play_move(&pos_next, p, computer_play, column);
+	int final = 0;
+	for (int i = 0; i < COLUMNS; ++i)
+	{
+		//check for opponent seeds
+		if(!computer_play)
+			final += pos_next.cells_computer[i];
+		else
+			final += pos_next.cells_player[i];
+
+		if(final != 0){			
+			//atleast 1 seed is there for opponent
+			return 1;
+		}
+	}
+	//opponent has no seeds
+	return 0;
+
 }
 
 void print_board(const Position *p, int current_depth){
