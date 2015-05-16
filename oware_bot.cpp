@@ -85,11 +85,11 @@ int main(){
 	init.seeds_computer = 0;
 	init.seeds_player = 0;
 
-	int computer_play = 1;
 
 	Position current = init;	
 	Position next;
 
+	int computer_play = 1;
 	int user_move = 0;	
 	int computer_move = 0;
 	int current_depth = 0;
