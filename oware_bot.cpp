@@ -70,6 +70,7 @@ int final_position(const Position *p, int, int);
 int valid_move(const Position *p, int, int);
 void play_move(Position *p, const Position *p1, int c_play, int start);
 void print_board(const Position *p, int);
+void print_board_clockwise(const Position *p, int);
 
 int MAX_DEPTH = 17;
 
@@ -114,8 +115,9 @@ int main(){
 			//check for validity of returned move and winning conditions
 			play_move(&next, &current, computer_play, play.column);
 			computer_play = !computer_play;
-			cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl << endl;
-			print_board(&next, 1);
+			// cout << endl << "Human Play: " << play.column << " in: " << (t2 - t1) / 1000. << endl << endl;
+			cout << endl << "Human Play: " << play.column << endl << endl;
+			print_board_clockwise(&next, 1);
 
 			current = next;
 		}
@@ -129,7 +131,7 @@ int main(){
 					play_move(&next, &current, computer_play, computer_move);		
 					current = next;
 					computer_play = !computer_play;
-					print_board(&next, 1);
+					print_board_clockwise(&next, 1);
 					break;
 				}
 				else{
